@@ -1,0 +1,8 @@
+build/*
+
+// ignore coverage and trace files
+.coverage_map.mvcov
+.trace
+
+// ignore lock file
+Move.lock
