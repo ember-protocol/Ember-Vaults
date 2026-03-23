@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2025 Ember Protocol Inc.
+  Copyright (c) 2026 Ember Protocol Inc.
   Proprietary Smart Contract License – All Rights Reserved.
 
   This source code is provided for transparency and verification only.
@@ -30,7 +30,7 @@ module ember_vaults::admin {
     /// Tracks the current version of the package. Every time a breaking change is pushed, 
     /// increment the version on the new package, making any old version of the package 
     /// unable to be used
-    const VERSION: u64 = 3;
+    const VERSION: u64 = 4;
 
 
     const MIN_RATE: u64 = 250000000; // 25%

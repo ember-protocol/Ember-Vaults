@@ -1,5 +1,7 @@
 # Ember Vaults
 
+[![CI](https://github.com/fireflyprotocol/ember-vaults/actions/workflows/ci.yml/badge.svg)](https://github.com/fireflyprotocol/ember-vaults/actions/workflows/ci.yml)
+
 The repo contains the Sui smart contracts for Ember Vaults.
 
 ## 🚀 Quick Start

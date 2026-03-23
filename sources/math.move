@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2025 Ember Protocol Inc.
+  Copyright (c) 2026 Ember Protocol Inc.
   Proprietary Smart Contract License – All Rights Reserved.
 
   This source code is provided for transparency and verification only.
@@ -63,6 +63,18 @@ module ember_vaults::math {
     /// - The absolute difference between the two values.
     public fun diff_abs(a: u64, b: u64): u64 {
         if (a > b) { a - b } else { b - a }
+    }
+
+    /// Calculates the percentage difference between two u64 values.
+    /// 
+    /// Parameters:
+    /// - a: The first u64 value.
+    /// - b: The second u64 value.
+    /// 
+    /// Returns:
+    /// - The percentage difference between the two values.
+    public fun diff_percent(a: u64, b: u64): u64 {
+        div(diff_abs(a, b), a)
     }
 
     /// Calculates the percentage difference between two u64 values.

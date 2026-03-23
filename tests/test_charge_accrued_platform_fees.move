@@ -86,7 +86,7 @@ module ember_vaults::test_charge_accrued_platform_fees {
             
             assert!(new_accrued == initial_accrued + expected_fee, 0);
             assert!(new_last_charged == new_timestamp, 1);
-            assert!(new_seq == initial_seq + 1, 2);
+            assert!(new_seq == initial_seq, 2);
             
             clock::destroy_for_testing(clock);
             test_scenario::return_shared(config);
@@ -282,6 +282,71 @@ module ember_vaults::test_charge_accrued_platform_fees {
     }
 
     #[test]
+    fun test_charge_fee_with_zero_fee_percentage_updates_timestamp_only() {
+        let protocol_admin = test_utils::protocol_admin();
+        let user = test_utils::alice();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        // Deposit assets to create TVL.
+        let deposit_amount = 1_000_000_000; // 1,000 USDC
+        let receipt = test_utils::mint_shares<USDC, UltraUSDC>(&mut scenario, user, deposit_amount, option::some(deposit_amount));
+        sui::coin::burn_for_testing(receipt);
+
+        // Initialize fee charging timestamp.
+        initialize_fee_timestamp(&mut scenario, INITIAL_TIMESTAMP);
+
+        // Update the vault fee to 0.
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        {
+            let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+            let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+            let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+
+            clock::set_for_testing(&mut clock, INITIAL_TIMESTAMP + ONE_HOUR_MS);
+            vault::update_vault_fee_percentage_v2<USDC, UltraUSDC>(
+                &mut vault,
+                &config,
+                0,
+                &clock,
+                test_scenario::ctx(&mut scenario)
+            );
+
+            assert!(vault::get_vault_fee_percentage(&vault) == 0, 0);
+
+            clock::destroy_for_testing(clock);
+            test_scenario::return_shared(config);
+            test_scenario::return_shared(vault);
+        };
+
+        // Charging with zero fee should only update last_charged_at.
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        {
+            let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+            let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+            let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+
+            let initial_accrued = vault::get_accrued_platform_fee(&vault);
+            let initial_seq = vault::get_vault_sequence_number(&vault);
+            let new_timestamp = INITIAL_TIMESTAMP + ONE_DAY_MS;
+
+            clock::set_for_testing(&mut clock, new_timestamp);
+            vault::test_charge_accrued_platform_fees(&mut vault, &clock);
+
+            assert!(vault::get_accrued_platform_fee(&vault) == initial_accrued, 1);
+            assert!(vault::get_last_charged_at_platform_fee(&vault) == new_timestamp, 2);
+            assert!(vault::get_vault_sequence_number(&vault) == initial_seq, 3);
+
+            clock::destroy_for_testing(clock);
+            test_scenario::return_shared(config);
+            test_scenario::return_shared(vault);
+        };
+
+        test_scenario::end(scenario);
+    }
+
+    #[test]
     fun test_charge_fee_accumulation() {
         let protocol_admin = test_utils::protocol_admin();
         let user = test_utils::alice();
@@ -339,7 +404,7 @@ module ember_vaults::test_charge_accrued_platform_fees {
     }
 
     #[test]
-    fun test_charge_fee_sequence_number_increments() {
+    fun test_charge_fee_sequence_number_unchanged() {
         let protocol_admin = test_utils::protocol_admin();
         let user = test_utils::alice();
         
@@ -369,17 +434,17 @@ module ember_vaults::test_charge_accrued_platform_fees {
             current_time = current_time + TEN_MINUTES_MS;
             clock::set_for_testing(&mut clock, current_time);
             vault::test_charge_accrued_platform_fees(&mut vault, &clock);
-            assert!(vault::get_vault_sequence_number(&vault) == initial_seq + 1, 0);
+            assert!(vault::get_vault_sequence_number(&vault) == initial_seq, 0);
             
             current_time = current_time + TEN_MINUTES_MS;
             clock::set_for_testing(&mut clock, current_time);
             vault::test_charge_accrued_platform_fees(&mut vault, &clock);
-            assert!(vault::get_vault_sequence_number(&vault) == initial_seq + 2, 1);
+            assert!(vault::get_vault_sequence_number(&vault) == initial_seq, 1);
             
             current_time = current_time + TEN_MINUTES_MS;
             clock::set_for_testing(&mut clock, current_time);
             vault::test_charge_accrued_platform_fees(&mut vault, &clock);
-            assert!(vault::get_vault_sequence_number(&vault) == initial_seq + 3, 2);
+            assert!(vault::get_vault_sequence_number(&vault) == initial_seq, 2);
             
             clock::destroy_for_testing(clock);
             test_scenario::return_shared(config);

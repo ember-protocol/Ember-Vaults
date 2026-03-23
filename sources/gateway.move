@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2025 Ember Protocol Inc.
+  Copyright (c) 2026 Ember Protocol Inc.
   Proprietary Smart Contract License – All Rights Reserved.
 
   This source code is provided for transparency and verification only.

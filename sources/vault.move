@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2025 Ember Protocol Inc.
+  Copyright (c) 2026 Ember Protocol Inc.
   Proprietary Smart Contract License – All Rights Reserved.
 
   This source code is provided for transparency and verification only.
@@ -367,15 +367,14 @@ module ember_vaults::vault {
         );
 
         assert!(rate != vault.rate.value, ESameValue);
+        
+        // increment the sequence number
+        vault.sequence_number = vault.sequence_number + 1;
 
         charge_accrued_platform_fees(vault, clock);
 
         let previous_rate = vault.rate.value;
         vault.rate.value = rate;
-
-
-        // increment the sequence number
-        vault.sequence_number = vault.sequence_number + 1;
 
         let vault_id = object::uid_to_inner(&vault.id);
 
@@ -535,14 +534,13 @@ module ember_vaults::vault {
         assert!(fee_percentage <= admin::get_max_allowed_fee_percentage(config), EInvalidFeePercentage);
         assert!(fee_percentage != vault.fee_percentage, ESameValue);
 
+        // increment the sequence number
+        vault.sequence_number = vault.sequence_number + 1;
+
         charge_accrued_platform_fees(vault, clock);
 
         let previous_fee_percentage = vault.fee_percentage;
         vault.fee_percentage = fee_percentage;
-
-
-        // increment the sequence number
-        vault.sequence_number = vault.sequence_number + 1;
 
         let vault_id = object::uid_to_inner(&vault.id);
         events::emit_vault_fee_percentage_updated_event(vault_id, previous_fee_percentage, fee_percentage, vault.sequence_number);
@@ -878,6 +876,9 @@ module ember_vaults::vault {
         admin::verify_protocol_not_paused(config);
         verify_vault_not_paused(vault);
 
+        // increment the sequence number
+        vault.sequence_number = vault.sequence_number + 1;
+
         charge_accrued_platform_fees(vault, clock);
 
         let owner = ctx.sender();
@@ -906,10 +907,6 @@ module ember_vaults::vault {
 
         let vault_id = object::uid_to_inner(&vault.id);
         let total_shares = get_vault_total_shares(vault);
-
-        // increment the sequence number
-        vault.sequence_number = vault.sequence_number + 1;
-
 
         events::emit_vault_deposit_event<T>(vault_id, owner, total_amount, shares_minted, previous_balance, current_balance, total_shares, vault.sequence_number);
 
@@ -966,6 +963,9 @@ module ember_vaults::vault {
         admin::verify_protocol_not_paused(config);
         verify_vault_not_paused(vault);
 
+        // increment the sequence number
+        vault.sequence_number = vault.sequence_number + 1;
+
         charge_accrued_platform_fees(vault, clock);
 
         let owner = ctx.sender();
@@ -1001,9 +1001,6 @@ module ember_vaults::vault {
 
         let vault_id = object::uid_to_inner(&vault.id);
         let total_shares = get_vault_total_shares(vault);
-
-        // increment the sequence number
-        vault.sequence_number = vault.sequence_number + 1;
 
         events::emit_vault_deposit_event<T>(
             vault_id, 
@@ -1122,8 +1119,10 @@ module ember_vaults::vault {
 
         assert!(num_requests > 0, EZeroAmount);
 
-        charge_accrued_platform_fees(vault, clock);
+        // increment the sequence number
+        vault.sequence_number = vault.sequence_number + 1;
 
+        charge_accrued_platform_fees(vault, clock);
 
         let mut total_shares_burnt = 0;
         let mut total_request_processed = 0;
@@ -1135,9 +1134,6 @@ module ember_vaults::vault {
 
         let queue_len = queue::len(&vault.pending_withdrawals);
         let num_requests = if(num_requests < queue_len){ num_requests } else { queue_len };
-
-        // increment the sequence number
-        vault.sequence_number = vault.sequence_number + 1;
 
         let mut i =0;
         while(i < num_requests){
@@ -1206,6 +1202,9 @@ module ember_vaults::vault {
         let sender = ctx.sender();
         assert!(sender == vault.operator, EInvalidPermission);
 
+        // increment the sequence number
+        vault.sequence_number = vault.sequence_number + 1;
+
         charge_accrued_platform_fees(vault, clock);
         
         let mut total_shares_burnt = 0;
@@ -1215,9 +1214,6 @@ module ember_vaults::vault {
         let mut requests_cancelled = 0;
         let current_time = clock::timestamp_ms(clock);
         let vault_id = object::uid_to_inner(&vault.id);
-
-        // increment the sequence number
-        vault.sequence_number = vault.sequence_number + 1;
 
         while(!queue::is_empty(&vault.pending_withdrawals)){
             // Peek at the front request to check timestamp before dequeuing
@@ -1733,6 +1729,11 @@ module ember_vaults::vault {
             return
         };
 
+        if(vault.fee_percentage == 0){
+            vault.fee.last_charged_at = current_time;
+            return
+        };
+
         let tvl = get_vault_tvl(vault);
 
         // tvl: 100 = 100e6
@@ -1744,7 +1745,6 @@ module ember_vaults::vault {
 
         vault.fee.accrued = vault.fee.accrued + fee_amount;
         vault.fee.last_charged_at = current_time;
-        vault.sequence_number = vault.sequence_number + 1;
 
         let vault_id = object::uid_to_inner(&vault.id);
         events::emit_vault_platform_fee_charged_event(vault_id, fee_amount, vault.fee.accrued, vault.fee.last_charged_at, vault.sequence_number);
