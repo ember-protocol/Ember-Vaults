@@ -7,6 +7,31 @@ published-at = "0x4e1634d0001f22e24ca9fe2127aa49461ea3c320d4456c005b2ad86038b3f8
 
 [dependencies]
 
+# Local interface stubs for the external lending protocols we integrate with.
+# Each stub package declares only the public types/functions we call from
+# strategy.move, with `abort 0` bodies and a `published-at = <on-chain pkg>`
+# pointing at the live Suilend deployment on Sui mainnet. At
+# build time the Move compiler type-checks against these stubs; at runtime
+# the calls dispatch to the actual on-chain packages via Sui's named-address
+# resolution. This keeps us off Suilend's heavy transitive dep tree (Pyth,
+# Cetus, Wormhole, switchboard, sprungsui, liquid_staking — which conflict
+# in non-trivial ways across protocol versions).
+suilend = { local = "external_stubs/suilend" }
+sui_system = { local = "external_stubs/sui_system" }
+
+# Empty stubs for Suilend's on-chain transitive dependencies. An upgrade tx must
+# list every package in its dependencies' linkage, and the stubs above declare
+# none. published-at = the upgraded id Suilend currently links against; refresh
+# alongside its stub. This list is exactly Suilend's linkage table minus the
+# framework packages (0x1/0x2/0x3) — verified against the on-chain package, so a
+# stub that is not in it does not belong here.
+pyth = { local = "external_stubs/pyth" }
+wormhole = { local = "external_stubs/wormhole" }
+liquid_staking = { local = "external_stubs/liquid_staking" }
+sprungsui = { local = "external_stubs/sprungsui" }
+suilend_pyth = { local = "external_stubs/suilend_pyth" }
+suilend_wormhole = { local = "external_stubs/suilend_wormhole" }
+
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
 # MyRemotePackage = { git = "https://some.remote/host.git", subdir = "remote/path", rev = "main" }

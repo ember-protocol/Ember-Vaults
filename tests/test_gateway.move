@@ -165,7 +165,7 @@ module ember_vaults::test_gateway {
             let treasury_cap = coin::create_treasury_cap_for_testing<UltraUSDC>(test_scenario::ctx(&mut scenario));
             
             let vault_name = string::utf8(b"Test Vault");
-            let max_rate_change = 1000000000; // 1.0
+            let max_rate_change = 50000000; // 5%. 1e9 (100%) is rejected — I-04.
             let fee_percentage = 100; // 1%
             let min_withdrawal_shares = 1000;
             let rate_update_interval = 3600000; // 1 hour

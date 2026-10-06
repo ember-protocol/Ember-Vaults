@@ -1,0 +1,21 @@
+{
+  "name": "ember-vaults",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Repo-level TypeScript tooling for the ember-vaults Sui Move package. Currently just the on-chain upgrade-compatibility checker used by CI; add new scripts under scripts/ and expose them here.",
+  "type": "module",
+  "scripts": {
+    "check-upgrade-compat": "tsx scripts/upgrade-compat/check.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@mysten/sui": "^2.13.2",
+    "@protobuf-ts/grpcweb-transport": "^2.11.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

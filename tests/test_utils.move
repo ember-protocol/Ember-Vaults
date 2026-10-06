@@ -35,6 +35,12 @@ module ember_vaults::test_utils {
         PROTOCOL_ADMIN
     }
 
+    /// Default vault admin for the shared test vault (`create_vault` / `initialize`).
+    /// Same address as `protocol_admin` in this fixture.
+    public fun vault_admin(): address {
+        PROTOCOL_ADMIN
+    }
+
     public fun bob(): address {
         BOB
     }
@@ -170,6 +176,40 @@ module ember_vaults::test_utils {
         receipt
     }
 
+
+    public fun deposit_assets_at_time<T,R>(scenario: &mut Scenario, user: address, amount: u64, clock_time: u64): Coin<R> {
+        test_scenario::next_tx(scenario, user);
+        let mut vault = test_scenario::take_shared<Vault<T,R>>(scenario);
+        let config = test_scenario::take_shared<ProtocolConfig>(scenario);
+
+        let deposit_balance = balance::create_for_testing<T>(amount);
+        let mut clock = clock::create_for_testing(test_scenario::ctx(scenario));
+        clock::set_for_testing(&mut clock, clock_time);
+
+        let receipt = vault::deposit_asset_v2<T,R>(&mut vault, &config, deposit_balance, 0, &clock, test_scenario::ctx(scenario));
+
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(vault);
+        test_scenario::return_shared(config);
+
+        receipt
+    }
+
+    public fun process_withdrawal_request_at_time<T,R>(scenario: &mut Scenario, num_requests: u64, clock_time: u64) {
+        test_scenario::next_tx(scenario, bob());
+
+        let mut clock = clock::create_for_testing(test_scenario::ctx(scenario));
+        clock::set_for_testing(&mut clock, clock_time);
+
+        let mut vault = test_scenario::take_shared<Vault<T,R>>(scenario);
+        let config = test_scenario::take_shared<ProtocolConfig>(scenario);
+
+        vault::process_withdrawal_requests<T,R>(&mut vault, &config, num_requests, &clock, test_scenario::ctx(scenario));
+
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(vault);
+        test_scenario::return_shared(config);
+    }
 
     public fun mint_shares<T,R>(scenario: &mut Scenario, user: address, shares: u64, balance_amount: Option<u64>): Coin<R> {
         mint_shares_with_slippage<T,R>(scenario, user, shares, balance_amount, MAX_U64) // Default max_amount = MAX_U64 (no slippage protection)

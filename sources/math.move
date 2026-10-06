@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2026 Ember Protocol Inc.
+  Copyright (c) 2025 Ember Protocol Inc.
   Proprietary Smart Contract License – All Rights Reserved.
 
   This source code is provided for transparency and verification only.
@@ -51,6 +51,15 @@ module ember_vaults::math {
         assert!(b > 0, EDivisionByZero); // Division by zero check
         let result = ((a as u128) * (BASE as u128)) / (b as u128);
         safely_cast_to_u64(result)
+    }
+
+    /// Same as `div` but returns the full `u128` result without narrowing to
+    /// `u64`. For callers that must tolerate a value above `u64::MAX` rather
+    /// than abort — chiefly TVL (`shares * BASE / rate`) on a large, low-rate
+    /// vault, read on every exit path where an abort would lock funds.
+    public fun div_u128(a: u64, b: u64): u128 {
+        assert!(b > 0, EDivisionByZero); // Division by zero check
+        ((a as u128) * (BASE as u128)) / (b as u128)
     }
 
     /// Calculates the absolute difference between two u64 values.
@@ -125,6 +134,17 @@ module ember_vaults::math {
     /// 
     public fun safe_cast_to_u64(result: u128): u64 {
         safely_cast_to_u64(result)
+    }
+
+    /// Safely casts a `u256` value to `u64`. For callers that need a wider
+    /// intermediate than `u128` to avoid an overflow abort on a product whose
+    /// quotient still fits `u64` (see `common::compute_platform_fee_delta`).
+    ///
+    /// Aborts with:
+    /// - EOverflow: If the value is greater than u64::MAX.
+    public fun safe_cast_u256_to_u64(result: u256): u64 {
+        assert!(result <= (u64::max_value!() as u256), EOverflow);
+        result as u64
     }
 
     /// Safely casts a u128 value to u64.

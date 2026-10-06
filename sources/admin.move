@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2026 Ember Protocol Inc.
+  Copyright (c) 2025 Ember Protocol Inc.
   Proprietary Smart Contract License – All Rights Reserved.
 
   This source code is provided for transparency and verification only.
@@ -12,6 +12,7 @@ module ember_vaults::admin {
     // === Imports ===
 
     use ember_vaults::events;
+    use sui::dynamic_field;
 
     // === Errors ===
 
@@ -24,13 +25,30 @@ module ember_vaults::admin {
     const EProtocolPaused: u64 = 1005;
     const EInvalidRateInterval: u64 = 1006;
     const ESameValue: u64 = 1007;
+    /// Guardian-gated function invoked by an account that is not the current guardian
+    /// (or guardian is unset). Mirrors the EVM `onlyGuardian` modifier semantics.
+    const EUnauthorized: u64 = 1008;
+
+    // === Dynamic-field keys ===
+
+    /// Key under which the (optional) guardian address is stored on the ProtocolConfig
+    /// object. Kept in a dynamic field rather than as a struct field so we can add the
+    /// role in an upgrade without changing ProtocolConfig's on-chain layout.
+    const KEY_GUARDIAN: vector<u8> = b"guardian";
 
     // === Constants ===
 
-    /// Tracks the current version of the package. Every time a breaking change is pushed, 
-    /// increment the version on the new package, making any old version of the package 
+    /// Tracks the current version of the package. Every time a breaking change is pushed,
+    /// increment the version on the new package, making any old version of the package
     /// unable to be used
-    const VERSION: u64 = 4;
+    ///
+    /// v6 (2026-05) — adds atomic_liquidity_vault, strategy.move (Suilend
+    ///                supply-only),
+    ///                common.move shared helpers, and new events. After
+    ///                publishing this upgrade, run
+    ///                `gateway::increase_supported_package_version` so the
+    ///                ProtocolConfig.version advances from 5 → 6.
+    const VERSION: u64 = 6;
 
 
     const MIN_RATE: u64 = 250000000; // 25%
@@ -119,9 +137,112 @@ module ember_vaults::admin {
     /// Aborts with:
     /// - ESameValue: If the pause status is the same as the current pause status.
     public fun pause_non_admin_operations(config: &mut ProtocolConfig, _: &AdminCap, pause: bool) {
+        verify_supported_package(config);
         assert!(pause != config.pause_non_admin_operations, ESameValue);
         config.pause_non_admin_operations = pause;
         events::emit_pause_non_admin_operations_event(pause);
+    }
+
+    // === Guardian ===
+
+    /// Sets or clears the guardian address. AdminCap-gated (mirrors `setGuardian`
+    /// on EVM's `EmberProtocolConfig`, which is `onlyOwner`). The guardian is an
+    /// emergency-response role with a narrow surface — it can pause the protocol
+    /// and pause / blacklist on individual vaults, but cannot rotate the guardian
+    /// itself or upgrade the package.
+    ///
+    /// `@0x0` is the sentinel for "no guardian" and is a supported input value
+    /// — passing it clears any current guardian. Once cleared, all
+    /// guardian-gated functions abort with {EUnauthorized} until a non-zero
+    /// guardian is set again. This gives the admin an explicit escape hatch:
+    /// if the guardian key is compromised or a change of policy is needed,
+    /// the admin can remove the role without needing a new one lined up.
+    ///
+    /// Storage lives in a dynamic field on the ProtocolConfig object so the
+    /// role can be added without altering the struct layout of existing
+    /// on-chain instances. `guardian_or_zero` treats an absent DF as `@0x0`.
+    ///
+    /// Parameters:
+    /// - config: Mutable reference to protocol config
+    /// - _: Immutable reference to admin cap (auth)
+    /// - new_guardian: The new guardian address, or `@0x0` to unset
+    ///
+    /// Aborts with:
+    /// - ESameValue: If `new_guardian` equals the current guardian (including
+    ///   the "unset → unset" case where both are `@0x0`).
+    public fun set_guardian(config: &mut ProtocolConfig, _: &AdminCap, new_guardian: address) {
+        verify_supported_package(config);
+        let previous = guardian_or_zero(config);
+        assert!(previous != new_guardian, ESameValue);
+
+        if (new_guardian == @0x0) {
+            // Explicit unset: drop the dynamic field if present so subsequent
+            // reads see the "no guardian" sentinel (`@0x0`).
+            let _: address = dynamic_field::remove(&mut config.id, KEY_GUARDIAN);
+        } else if (previous == @0x0) {
+            // First set: no existing entry to remove.
+            dynamic_field::add(&mut config.id, KEY_GUARDIAN, new_guardian);
+        } else {
+            // Rotate: drop the previous value and store the new one.
+            let _: address = dynamic_field::remove(&mut config.id, KEY_GUARDIAN);
+            dynamic_field::add(&mut config.id, KEY_GUARDIAN, new_guardian);
+        };
+
+        events::emit_guardian_updated_event(previous, new_guardian);
+    }
+
+    /// Guardian fast-path for `pause_non_admin_operations`. Semantically identical
+    /// to the AdminCap-gated variant but callable directly by the guardian address
+    /// (no capability needed). Mirrors `EmberProtocolConfig.guardianPauseNonAdminOperations`.
+    ///
+    /// Aborts with:
+    /// - EUnauthorized: If the caller is not the currently-configured guardian
+    ///   (also aborts if the guardian is unset).
+    /// - ESameValue: If `pause` equals the current pause status.
+    /// UPGRADE-WINDOW CAVEAT (L-07 follow-up): `verify_supported_package`
+    /// couples this incident-response path to the upgrade state. While an
+    /// upgrade is half-applied — new package published, `ProtocolConfig.version`
+    /// not yet advanced — guardian tooling pinned to the NEW package id aborts
+    /// with `EUnsupportedPackage` and must call through the retired package id
+    /// until an admin runs `increase_supported_package_version`. Capture this
+    /// in the upgrade runbook: the guardian pause is not reachable from the new
+    /// package until the version bump lands.
+    public fun guardian_pause_non_admin_operations(
+        config: &mut ProtocolConfig,
+        pause: bool,
+        ctx: &TxContext,
+    ) {
+        verify_supported_package(config);
+        verify_guardian(config, ctx);
+        assert!(pause != config.pause_non_admin_operations, ESameValue);
+        config.pause_non_admin_operations = pause;
+        events::emit_pause_non_admin_operations_event(pause);
+    }
+
+    /// Returns the currently-configured guardian address, or `@0x0` if unset.
+    /// (Not exposing `Option<address>` here keeps the ABI simple and matches
+    /// the "guardian == address(0) means unset" convention used on EVM.)
+    public fun get_guardian(config: &ProtocolConfig): address {
+        guardian_or_zero(config)
+    }
+
+    /// Asserts that the transaction sender is the currently-configured guardian.
+    /// Reverts with EUnauthorized if the guardian is unset OR the caller does
+    /// not match. Public so that other modules (vault, atomic_liquidity_vault)
+    /// can gate their own guardian fast-path functions.
+    public fun verify_guardian(config: &ProtocolConfig, ctx: &TxContext) {
+        let g = guardian_or_zero(config);
+        assert!(g != @0x0 && ctx.sender() == g, EUnauthorized);
+    }
+
+    /// Internal helper: read guardian from the dynamic field, defaulting to
+    /// `@0x0` if unset.
+    fun guardian_or_zero(config: &ProtocolConfig): address {
+        if (dynamic_field::exists_with_type<vector<u8>, address>(&config.id, KEY_GUARDIAN)) {
+            *dynamic_field::borrow<vector<u8>, address>(&config.id, KEY_GUARDIAN)
+        } else {
+            @0x0
+        }
     }
 
     /// Increases the version of the protocol supported. Only admin can invoke this.
@@ -152,6 +273,7 @@ module ember_vaults::admin {
     /// Aborts with:
     /// - EInvalidRecipient: If the recipient is the zero address
     public fun update_platform_fee_recipient(config: &mut ProtocolConfig, _: &AdminCap, recipient: address) {
+        verify_supported_package(config);
         assert!(recipient != @0x0 && recipient != config.platform_fee_recipient, EInvalidRecipient);
         let previous_recipient = config.platform_fee_recipient;
         config.platform_fee_recipient = recipient;
@@ -170,6 +292,7 @@ module ember_vaults::admin {
     /// Aborts with:
     /// - EInvalidRate: If the min rate is greater than the max rate
     public fun update_min_rate(config: &mut ProtocolConfig, _: &AdminCap, min_rate: u64) {
+        verify_supported_package(config);
         assert!(min_rate > 0 && min_rate <= config.max_rate && min_rate <= config.default_rate && min_rate != config.min_rate, EInvalidRate);
         let previous_min_rate = config.min_rate;
         config.min_rate = min_rate;
@@ -187,6 +310,7 @@ module ember_vaults::admin {
     /// Aborts with:
     /// - EInvalidRate: If the max rate is less than the min rate
     public fun update_max_rate(config: &mut ProtocolConfig, _: &AdminCap, max_rate: u64) {
+        verify_supported_package(config);
         assert!(max_rate >= config.min_rate && max_rate >= config.default_rate && max_rate != config.max_rate, EInvalidRate);
         let previous_max_rate = config.max_rate;
         config.max_rate = max_rate;
@@ -205,6 +329,7 @@ module ember_vaults::admin {
     /// Aborts with:
     /// - EInvalidRate: If the default rate is less than the min rate
     public fun update_default_rate(config: &mut ProtocolConfig, _: &AdminCap, default_rate: u64) {
+        verify_supported_package(config);
         assert!(default_rate >= config.min_rate && default_rate <= config.max_rate && default_rate != config.default_rate, EInvalidRate);
         let previous_default_rate = config.default_rate;
         config.default_rate = default_rate;
@@ -222,6 +347,7 @@ module ember_vaults::admin {
     /// Aborts with:
     /// - EInvalidFeePercentage: If the max fee percentage is greater than 100%
     public fun update_max_fee_percentage(config: &mut ProtocolConfig, _: &AdminCap, max_fee_percentage: u64) {
+        verify_supported_package(config);
         assert!(max_fee_percentage <  1000000000 && max_fee_percentage != config.max_fee_percentage, EInvalidFeePercentage);
         let previous_max_fee_percentage = config.max_fee_percentage;
         config.max_fee_percentage = max_fee_percentage;
@@ -239,6 +365,7 @@ module ember_vaults::admin {
     /// Aborts with:
     /// - EInvalidRateInterval: If the min rate interval is greater than the min rate interval or less than 1 minute
     public fun update_min_rate_interval(config: &mut ProtocolConfig, _: &AdminCap, min_rate_interval: u64) {
+        verify_supported_package(config);
         assert!(min_rate_interval >= 60 * 1000 && min_rate_interval <= config.max_rate_interval && min_rate_interval != config.min_rate_interval, EInvalidRateInterval);
         let previous_min_rate_interval = config.min_rate_interval;
         config.min_rate_interval = min_rate_interval;
@@ -256,6 +383,7 @@ module ember_vaults::admin {
     /// Aborts with:
     /// - EInvalidRateInterval: If the max rate interval is less than the min rate interval
     public fun update_max_rate_interval(config: &mut ProtocolConfig, _: &AdminCap, max_rate_interval: u64) {
+        verify_supported_package(config);
         assert!(max_rate_interval >= config.min_rate_interval && max_rate_interval <= MAX_RATE_INTERVAL && max_rate_interval != config.max_rate_interval, EInvalidRateInterval);
         let previous_max_rate_interval = config.max_rate_interval;
         config.max_rate_interval = max_rate_interval;

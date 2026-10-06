@@ -16,7 +16,7 @@ module ember_vaults::test_queue {
         assert!(queue::is_empty(&queue), 0);
         assert!(queue::len(&queue) == 0, 1);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -33,7 +33,7 @@ module ember_vaults::test_queue {
         assert!(!queue::is_empty(&queue), 0);
         assert!(queue::len(&queue) == 1, 1);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -52,7 +52,7 @@ module ember_vaults::test_queue {
         assert!(!queue::is_empty(&queue), 0);
         assert!(queue::len(&queue) == 3, 1);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -73,7 +73,7 @@ module ember_vaults::test_queue {
         assert!(!queue::is_empty(&queue), 1);
         assert!(queue::len(&queue) == 1, 2);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -94,7 +94,7 @@ module ember_vaults::test_queue {
         assert!(queue::is_empty(&queue), 1);
         assert!(queue::len(&queue) == 0, 2);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -123,7 +123,7 @@ module ember_vaults::test_queue {
         assert!(queue::len(&queue) == 0, 5);
         assert!(queue::is_empty(&queue), 6);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -148,7 +148,7 @@ module ember_vaults::test_queue {
         // Length should not change
         assert!(queue::len(&queue) == 3, 2);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -177,7 +177,7 @@ module ember_vaults::test_queue {
         
         assert!(queue::is_empty(&queue), 5);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -208,7 +208,7 @@ module ember_vaults::test_queue {
         let val2 = queue::dequeue(&mut queue);
         assert!(val2 == 200, 3);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -232,7 +232,7 @@ module ember_vaults::test_queue {
         let second = queue::dequeue(&mut queue);
         assert!(second == std::string::utf8(b"world"), 2);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -246,7 +246,7 @@ module ember_vaults::test_queue {
         // Should fail when trying to dequeue from empty queue
         let _ = queue::dequeue(&mut queue);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -260,7 +260,7 @@ module ember_vaults::test_queue {
         // Should fail when trying to peek empty queue
         let _ = queue::peek(&queue);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -278,7 +278,7 @@ module ember_vaults::test_queue {
         // Should fail when trying to dequeue from now-empty queue
         let _ = queue::dequeue(&mut queue);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -296,7 +296,7 @@ module ember_vaults::test_queue {
         // Should fail when trying to peek now-empty queue
         let _ = queue::peek(&queue);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 
@@ -330,7 +330,7 @@ module ember_vaults::test_queue {
         let front = queue::peek(&queue);
         assert!(*front == 50, 4);
         
-        sui::test_utils::destroy(queue);
+        std::unit_test::destroy(queue);
         test::end(scenario);
     }
 }

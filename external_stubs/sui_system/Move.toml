@@ -1,0 +1,14 @@
+[package]
+name = "sui_system"
+edition = "2024.beta"
+# Sui system framework package. Provides `sui_system::sui_system::SuiSystemState`,
+# threaded into Suilend's SUI unstake path for SUI redemptions. Stub only —
+# the real modules ship with the Sui framework at `0x3`.
+published-at = "0x3"
+
+[dependencies]
+
+[addresses]
+# System framework address — the stable identifier pinning
+# `sui_system::sui_system::SuiSystemState` to the on-chain type.
+sui_system = "0x3"

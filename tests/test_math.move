@@ -1,6 +1,7 @@
 #[test_only]
 module ember_vaults::test_math {
     use ember_vaults::math::{Self};
+    use ember_vaults::common;
 
     // Constants for testing
     const BASE: u64 = 1_000_000_000;
@@ -294,5 +295,56 @@ module ember_vaults::test_math {
         assert!(result2 == 10000, 1); // 1000 * 10 = 10000
     }
 
+    // === L-4: u128 TVL / fee math must not abort above u64::MAX ===
 
+    #[test]
+    /// `div_u128` returns the full result even when it exceeds u64::MAX — the
+    /// TVL of `total_shares = 2e10` at `rate = 1` is `2e10 * 1e9 = 2e19`, above
+    /// u64::MAX (~1.844e19).
+    fun div_u128_returns_value_above_u64() {
+        let result = math::div_u128(20_000_000_000, 1);
+        assert!(result == 20_000_000_000_000_000_000, 0);
+        assert!(result > (MAX_U64 as u128), 1);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ember_vaults::math::EOverflow)]
+    /// The narrowing `div` aborts on exactly the input `div_u128` handles — this
+    /// is the overflow that used to lock exits when read inside fee accrual.
+    fun div_narrows_and_aborts_where_div_u128_succeeds() {
+        math::div(20_000_000_000, 1);
+    }
+
+    #[test]
+    /// `compute_platform_fee_delta` accepts a TVL above u64::MAX without
+    /// aborting. With `tvl == FEE_DENOMINATOR` the delta reduces to
+    /// `fee_percentage * elapsed_ms`: 1e7 * 100 = 1e9. FEE_DENOMINATOR
+    /// (~3.15e19) is itself above u64::MAX, so this exercises the widened path.
+    fun platform_fee_delta_accepts_tvl_above_u64() {
+        let tvl_above_u64: u128 = 31_536_000_000_000_000_000; // = FEE_DENOMINATOR
+        assert!(tvl_above_u64 > (MAX_U64 as u128), 0);
+        let fee = common::compute_platform_fee_delta(
+            tvl_above_u64,
+            10_000_000, // fee_percentage (1%)
+            0,          // last_charged_at
+            100,        // current_time (100 ms elapsed)
+        );
+        assert!(fee == 1_000_000_000, 1);
+    }
+
+    #[test]
+    /// L-11: `tvl * fee_percentage * elapsed_ms` overflowed the old `u128`
+    /// intermediate even though the post-division fee still fits `u64`. The
+    /// numerator here is 4e38 (u128::MAX is ~3.40e38) and the quotient is
+    /// ~1.27e19, below u64::MAX (~1.84e19).
+    fun platform_fee_delta_survives_u128_overflow_numerator() {
+        let tvl: u128 = 400_000_000_000_000_000_000; // 4e20
+        let fee = common::compute_platform_fee_delta(
+            tvl,
+            1_000_000_000, // fee_percentage = 100%/yr
+            0,             // last_charged_at
+            1_000_000_000, // current_time -> 1e9 ms elapsed
+        );
+        assert!(fee == 12_683_916_793_505_834_601, 0);
+    }
 }

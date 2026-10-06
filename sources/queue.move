@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2026 Ember Protocol Inc.
+  Copyright (c) 2025 Ember Protocol Inc.
   Proprietary Smart Contract License – All Rights Reserved.
 
   This source code is provided for transparency and verification only.
@@ -111,5 +111,12 @@ module ember_vaults::queue {
     /// - The current length of the queue.
     public fun len<T: store>(q: &Queue<T>): u64 {
         q.tail - q.head
+    }
+
+    /// Return the current head index (the absolute index of the next element to
+    /// dequeue). After the queue fully drains it resets to 0. Distinct from
+    /// `len` (the remaining-element count `tail - head`).
+    public fun head<T: store>(q: &Queue<T>): u64 {
+        q.head
     }
 }

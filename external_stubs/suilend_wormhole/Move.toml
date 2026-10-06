@@ -1,0 +1,7 @@
+[package]
+name = "suilend_wormhole"
+edition = "2024.beta"
+published-at = "0x99de5c967d8206ef4b75c0afab3df2a59eb02b05c282821db803831008ac25b4"
+
+[addresses]
+suilend_wormhole = "0x99de5c967d8206ef4b75c0afab3df2a59eb02b05c282821db803831008ac25b4"

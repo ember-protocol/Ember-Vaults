@@ -1,0 +1,20 @@
+[package]
+name = "suilend"
+edition = "2024.beta"
+# Latest mainnet upgrade of Suilend's main lending market package: package
+# version 24. Update this on Suilend upgrades; original-id (the `suilend`
+# named address below) stays the same across upgrades.
+#
+# Was v23 0x4989dd9a04581ee50d0d0b3dd99b56c1a86bc363b57dc5b64264832c97e72645;
+# v24 keeps every signature this stub declares and the same linkage.
+published-at = "0xaf22cf67bb587f86096241457be6759809d662527c0f592e02f408de78b33eb3"
+
+[dependencies]
+# For `lending_market::unstake_sui_from_staker`, which threads
+# `&mut SuiSystemState` — Suilend stakes idle SUI reserve balance.
+sui_system = { local = "../sui_system" }
+
+[addresses]
+# Original publish address — the stable identifier used by Move type system to
+# pin `suilend::lending_market::LendingMarket` etc. on the live package.
+suilend = "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf"

@@ -1,0 +1,67 @@
+name: Upgrade Compatibility
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE: mysten/sui-tools:mainnet
+  DOCKER_CACHE_KEY: sui-docker-mainnet-v1
+
+concurrency:
+  group: upgrade-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Diff on-chain package vs PR sources
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      # Reuse the sui-tools image cached by ci.yml so we don't re-pull it.
+      - name: Restore Docker cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.docker-cache
+          key: ${{ env.DOCKER_CACHE_KEY }}
+
+      - name: Load Sui Docker image
+        run: |
+          if [ -f /tmp/.docker-cache/sui-mainnet.tar ]; then
+            docker load -i /tmp/.docker-cache/sui-mainnet.tar || docker pull "$DOCKER_IMAGE"
+          else
+            docker pull "$DOCKER_IMAGE"
+          fi
+
+      # Expose `sui` on PATH so the check.ts script's `sui move build` call
+      # doesn't need to know about Docker.
+      - name: Install sui shim
+        run: |
+          sudo tee /usr/local/bin/sui > /dev/null <<'EOF'
+          #!/usr/bin/env bash
+          exec docker run --rm -v "$GITHUB_WORKSPACE:/app" -w /app \
+            mysten/sui-tools:mainnet sui "$@"
+          EOF
+          sudo chmod +x /usr/local/bin/sui
+          sui --version
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # 22+ required by transitive graphql@17 pulled in via @mysten/sui.
+          node-version: "22"
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - name: Install script deps
+        run: yarn install --frozen-lockfile
+
+      - name: Run upgrade-compatibility check
+        env:
+          # A public RPC works; override via secret if the CI hits rate limits.
+          SUI_RPC_URL: ${{ vars.SUI_RPC_URL || 'https://fullnode.mainnet.sui.io:443' }}
+        run: yarn check-upgrade-compat --rpc "$SUI_RPC_URL"

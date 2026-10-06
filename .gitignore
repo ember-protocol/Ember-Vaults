@@ -6,3 +6,6 @@ build/*
 
 // ignore lock file
 Move.lock
+
+// ignore Node deps used by scripts/
+node_modules/

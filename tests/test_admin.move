@@ -610,6 +610,216 @@ module ember_vaults::tests_admin {
                 test_scenario::return_shared(config);
                 test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
 
-                test_scenario::end(scenario);           
+                test_scenario::end(scenario);
+        }
+
+        // ==========================================================
+        // Guardian role
+        // ==========================================================
+
+        #[test]
+        fun should_set_and_get_guardian() {
+                let protocol_admin = test_utils::protocol_admin();
+                let guardian = test_utils::alice();
+
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+
+                // Unset by default.
+                assert!(admin::get_guardian(&config) == @0x0, 1);
+
+                admin::set_guardian(&mut config, &cap, guardian);
+                assert!(admin::get_guardian(&config) == guardian, 2);
+
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        fun should_unset_guardian_when_zero_address_passed() {
+                let protocol_admin = test_utils::protocol_admin();
+                let guardian = test_utils::alice();
+
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+
+                admin::set_guardian(&mut config, &cap, guardian);
+                assert!(admin::get_guardian(&config) == guardian, 1);
+
+                admin::set_guardian(&mut config, &cap, @0x0);
+                assert!(admin::get_guardian(&config) == @0x0, 2);
+
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ember_vaults::admin::ESameValue)]
+        fun should_fail_to_set_guardian_to_same_address() {
+                let protocol_admin = test_utils::protocol_admin();
+                let guardian = test_utils::alice();
+
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+
+                admin::set_guardian(&mut config, &cap, guardian);
+                // Second call with the same address must revert.
+                admin::set_guardian(&mut config, &cap, guardian);
+
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ember_vaults::admin::EUnsupportedPackage)]
+        /// L-07: a retired package must not be able to mutate the shared config.
+        /// `guardian_pause_non_admin_operations` verified only the guardian, so
+        /// old bytecode kept flipping the global pause after an upgrade bumped
+        /// `ProtocolConfig.version` past this package's `VERSION`.
+        fun guardian_pause_aborts_from_retired_package() {
+                let protocol_admin = test_utils::protocol_admin();
+                let guardian = test_utils::alice();
+
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+                admin::set_guardian(&mut config, &cap, guardian);
+                // Retire this package: advance the config past its compiled VERSION.
+                admin::increase_supported_package_version_for_testing(&mut config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+                test_scenario::next_tx(&mut scenario, guardian);
+                admin::guardian_pause_non_admin_operations(
+                        &mut config, true, test_scenario::ctx(&mut scenario),
+                );
+
+                test_scenario::return_shared(config);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ember_vaults::admin::EUnsupportedPackage)]
+        /// L-07: same retirement gap on the AdminCap-gated config setters.
+        fun admin_config_setter_aborts_from_retired_package() {
+                let protocol_admin = test_utils::protocol_admin();
+
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+                admin::increase_supported_package_version_for_testing(&mut config);
+
+                admin::update_platform_fee_recipient(&mut config, &cap, test_utils::bob());
+
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        fun should_allow_guardian_to_pause_non_admin_operations() {
+                let protocol_admin = test_utils::protocol_admin();
+                let guardian = test_utils::alice();
+
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+                admin::set_guardian(&mut config, &cap, guardian);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+                // Guardian pauses via the fast-path (no AdminCap needed).
+                test_scenario::next_tx(&mut scenario, guardian);
+                admin::guardian_pause_non_admin_operations(
+                        &mut config,
+                        true,
+                        test_scenario::ctx(&mut scenario),
+                );
+                assert!(admin::get_protocol_pause_status(&config), 1);
+
+                // Guardian can also unpause.
+                test_scenario::next_tx(&mut scenario, guardian);
+                admin::guardian_pause_non_admin_operations(
+                        &mut config,
+                        false,
+                        test_scenario::ctx(&mut scenario),
+                );
+                assert!(!admin::get_protocol_pause_status(&config), 2);
+
+                test_scenario::return_shared(config);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ember_vaults::admin::EUnauthorized)]
+        fun should_fail_when_non_guardian_calls_guardian_pause() {
+                let protocol_admin = test_utils::protocol_admin();
+                let guardian = test_utils::alice();
+                let random_user = test_utils::bob();
+
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+                admin::set_guardian(&mut config, &cap, guardian);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+                // Random user tries the guardian fast-path.
+                test_scenario::next_tx(&mut scenario, random_user);
+                admin::guardian_pause_non_admin_operations(
+                        &mut config,
+                        true,
+                        test_scenario::ctx(&mut scenario),
+                );
+
+                test_scenario::return_shared(config);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ember_vaults::admin::EUnauthorized)]
+        fun should_fail_guardian_pause_when_guardian_unset() {
+                let protocol_admin = test_utils::protocol_admin();
+
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+
+                // Guardian is unset — the protocol admin (or anyone) attempting the
+                // guardian fast-path must be rejected.
+                admin::guardian_pause_non_admin_operations(
+                        &mut config,
+                        true,
+                        test_scenario::ctx(&mut scenario),
+                );
+
+                test_scenario::return_shared(config);
+                test_scenario::end(scenario);
         }
 }

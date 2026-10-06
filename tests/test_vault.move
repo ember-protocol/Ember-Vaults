@@ -11,6 +11,181 @@ module ember_vaults::tests_vault {
         use sui::clock::{Self};
 
         #[test]
+        #[expected_failure(abort_code = ::ember_vaults::vault::EInvalidAmount)]
+        /// I-04 follow-up: `max_tvl == 0` makes every deposit revert, so the vault is born dead
+        /// and no setter can repair it.
+        fun should_fail_when_creating_vault_with_zero_max_tvl() {
+                let protocol_admin = test_utils::protocol_admin();
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+                let receipt_token_treasury_cap =
+                        coin::create_treasury_cap_for_testing<UltraUSDC>(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+
+                let vault = vault::create_vault<USDC, UltraUSDC>(
+                        &config,
+                        receipt_token_treasury_cap,
+                        &cap,
+                        b"Sample Vault".to_string(),
+                        protocol_admin, test_utils::bob(),
+                        50000000, // max rate change per update
+                        1000000,
+                        1,
+                        86400000,
+                        0, // max_tvl
+                        vector::empty(),
+                        test_scenario::ctx(&mut scenario));
+
+                vault::share_vault(vault);
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ::ember_vaults::vault::EInvalidAmount)]
+        /// I-04 follow-up: a cap of 1e9 is 100%, which is no cap at all — one
+        /// update could move the rate anywhere the min/max rate bounds allow.
+        /// `update_vault_max_rate_change_per_update` has always rejected it;
+        /// creation did not, and two tests here were passing exactly this value.
+        fun should_fail_when_creating_vault_with_unbounded_max_rate_change() {
+                let protocol_admin = test_utils::protocol_admin();
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+                let receipt_token_treasury_cap =
+                        coin::create_treasury_cap_for_testing<UltraUSDC>(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+
+                let vault = vault::create_vault<USDC, UltraUSDC>(
+                        &config,
+                        receipt_token_treasury_cap,
+                        &cap,
+                        b"Sample Vault".to_string(),
+                        protocol_admin, test_utils::bob(),
+                        1000000000, // exactly 1e9 = 100%
+                        1000000,
+                        1,
+                        86400000,
+                        1000000000000,
+                        vector::empty(),
+                        test_scenario::ctx(&mut scenario));
+
+                vault::share_vault(vault);
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ::ember_vaults::vault::EInvalidAmount)]
+        /// I-04 follow-up: `max_rate_change_per_update == 0` pins the rate forever — every update
+        /// is bounded by it.
+        fun should_fail_when_creating_vault_with_zero_max_rate_change() {
+                let protocol_admin = test_utils::protocol_admin();
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+                let receipt_token_treasury_cap =
+                        coin::create_treasury_cap_for_testing<UltraUSDC>(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+
+                let vault = vault::create_vault<USDC, UltraUSDC>(
+                        &config,
+                        receipt_token_treasury_cap,
+                        &cap,
+                        b"Sample Vault".to_string(),
+                        protocol_admin, test_utils::bob(),
+                        0, // max rate change per update
+                        1000000,
+                        1,
+                        86400000,
+                        1000000000000, // max_tvl
+                        vector::empty(),
+                        test_scenario::ctx(&mut scenario));
+
+                vault::share_vault(vault);
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ::ember_vaults::vault::EInvalidAccount)]
+        /// I-04 follow-up: an allowlisted `@0` can receive and permanently orphan vault assets.
+        fun should_fail_when_creating_vault_with_zero_address_sub_account() {
+                let protocol_admin = test_utils::protocol_admin();
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+                let receipt_token_treasury_cap =
+                        coin::create_treasury_cap_for_testing<UltraUSDC>(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+
+                let vault = vault::create_vault<USDC, UltraUSDC>(
+                        &config,
+                        receipt_token_treasury_cap,
+                        &cap,
+                        b"Sample Vault".to_string(),
+                        protocol_admin, test_utils::bob(),
+                        50000000, // max rate change per update
+                        1000000,
+                        1,
+                        86400000,
+                        1000000000000, // max_tvl
+                        vector[@0x0],
+                        test_scenario::ctx(&mut scenario));
+
+                vault::share_vault(vault);
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
+        #[expected_failure(abort_code = ::ember_vaults::vault::EInvalidAccount)]
+        /// I-04 follow-up: a duplicate survives one removal, so de-listing silently fails.
+        fun should_fail_when_creating_vault_with_duplicate_sub_accounts() {
+                let protocol_admin = test_utils::protocol_admin();
+                let mut scenario = test_scenario::begin(protocol_admin);
+                admin::initialize_module(test_scenario::ctx(&mut scenario));
+                let receipt_token_treasury_cap =
+                        coin::create_treasury_cap_for_testing<UltraUSDC>(test_scenario::ctx(&mut scenario));
+
+                test_scenario::next_tx(&mut scenario, protocol_admin);
+                let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+
+                let vault = vault::create_vault<USDC, UltraUSDC>(
+                        &config,
+                        receipt_token_treasury_cap,
+                        &cap,
+                        b"Sample Vault".to_string(),
+                        protocol_admin, test_utils::bob(),
+                        50000000, // max rate change per update
+                        1000000,
+                        1,
+                        86400000,
+                        1000000000000, // max_tvl
+                        vector[test_utils::alice(), test_utils::alice()],
+                        test_scenario::ctx(&mut scenario));
+
+                vault::share_vault(vault);
+                test_scenario::return_shared(config);
+                test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+                test_scenario::end(scenario);
+        }
+
+        #[test]
         fun should_create_vault() {
                 let protocol_admin = test_utils::protocol_admin();
 
@@ -28,7 +203,7 @@ module ember_vaults::tests_vault {
                         &cap, 
                         b"Sample Vault".to_string(),
                         protocol_admin, test_utils::bob(), 
-                        1000000000,
+                        50000000, // 5%. 1e9 (100%) is rejected — I-04.
                         1000000, //0.1%    
                         1000000,// 1 share
                         3600000, // 1 hour in milliseconds (valid rate update interval)
@@ -44,7 +219,7 @@ module ember_vaults::tests_vault {
                 assert!(vector::length(&vault::get_vault_sub_accounts<USDC, UltraUSDC>(&vault)) == 0, 1);
                 assert!(vault::get_vault_rate<USDC, UltraUSDC>(&vault) == admin::get_default_rate(&config), 1);
                 assert!(vault::get_vault_sequence_number<USDC, UltraUSDC>(&vault) == 0, 1);
-                assert!(vault::get_vault_max_rate_change_per_update<USDC, UltraUSDC>(&vault) == 1000000000, 1);
+                assert!(vault::get_vault_max_rate_change_per_update<USDC, UltraUSDC>(&vault) == 50000000, 1);
                 assert!(vault::get_vault_balance<USDC, UltraUSDC>(&vault) == 0, 1);
                 assert!(vault::get_vault_total_shares_in_circulation<USDC, UltraUSDC>(&vault) == 0, 1);
 
@@ -477,13 +652,14 @@ module ember_vaults::tests_vault {
                 test_scenario::next_tx(&mut scenario, operator);
                 let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
                 let mut vault = test_scenario::take_shared<Vault<USDC,UltraUSDC>>(&scenario );
+                let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
-                vault::collect_platform_fee<USDC,UltraUSDC>(&mut vault, &config, test_scenario::ctx(&mut scenario));
-                
-                
+                vault::collect_platform_fee_v2<USDC,UltraUSDC>(&mut vault, &config, &clock, test_scenario::ctx(&mut scenario));
+
+                clock::destroy_for_testing(clock);
                 test_scenario::return_shared(config);
                 test_scenario::return_shared(vault);
-                test_scenario::end(scenario);   
+                test_scenario::end(scenario);
 
         }
 
@@ -500,13 +676,14 @@ module ember_vaults::tests_vault {
                 test_scenario::next_tx(&mut scenario, operator);
                 let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
                 let mut vault = test_scenario::take_shared<Vault<USDC,UltraUSDC>>(&scenario );
+                let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
                 vault::increase_platform_fee_accrued<USDC,UltraUSDC>(&mut vault, 1000000000, 1000000000);
 
                 let collected_fee_before = vault::get_accrued_platform_fee<USDC, UltraUSDC>(&vault);
                 assert!(collected_fee_before == 1000000000, 1);
 
-                vault::collect_platform_fee<USDC,UltraUSDC>(&mut vault, &config, test_scenario::ctx(&mut scenario));                
+                vault::collect_platform_fee_v2<USDC,UltraUSDC>(&mut vault, &config, &clock, test_scenario::ctx(&mut scenario));
                 let collected_fee_after = vault::get_accrued_platform_fee<USDC, UltraUSDC>(&vault);
                 assert!(collected_fee_after == 0, 2);
 
@@ -516,12 +693,12 @@ module ember_vaults::tests_vault {
                 let coins = test_scenario::take_from_address<Coin<USDC>>(&scenario, recipient);
 
                 assert!(coin::value(&coins) == 1000000000, 3);
-                
-                
+
+                clock::destroy_for_testing(clock);
                 test_scenario::return_shared(config);
                 test_scenario::return_shared(vault);
                 test_scenario::return_to_address<Coin<USDC>>(recipient, coins);
-                test_scenario::end(scenario);   
+                test_scenario::end(scenario);
 
         }
 
@@ -540,15 +717,16 @@ module ember_vaults::tests_vault {
                 let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
                 let mut vault = test_scenario::take_shared<Vault<USDC,UltraUSDC>>(&scenario );
                 let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+                let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
 
                 admin::pause_non_admin_operations(&mut config, &cap, true);
-                vault::collect_platform_fee<USDC,UltraUSDC>(&mut vault, &config, test_scenario::ctx(&mut scenario));                
-                
-                
+                vault::collect_platform_fee_v2<USDC,UltraUSDC>(&mut vault, &config, &clock, test_scenario::ctx(&mut scenario));
+
+                clock::destroy_for_testing(clock);
                 test_scenario::return_shared(config);
                 test_scenario::return_shared(vault);
                 test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
-                test_scenario::end(scenario);   
+                test_scenario::end(scenario);
         }
 
         #[test]
@@ -1370,7 +1548,111 @@ module ember_vaults::tests_vault {
 
                 test_scenario::return_shared(config);
                 test_scenario::return_shared(vault);
-                test_scenario::end(scenario);   
+                test_scenario::end(scenario);
+        }
+
+        /// Happy path: funds credited to the vault's accumulator balance are
+        /// redeemed and land in the vault's own balance.
+        #[test]
+        fun should_deposit_accumulator_balance_into_vault() {
+
+                let operator = test_utils::bob();
+                let sub_account = test_utils::charlie();
+                let deposit_amount = 10000;
+
+                let mut scenario = test_scenario::begin(operator);
+                test_utils::initialize(&mut scenario);
+                test_utils::set_sub_account(&mut scenario, sub_account);
+
+                test_scenario::next_tx(&mut scenario, operator);
+                let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+                // Credit the vault's accumulator, the way `send_funds` does on chain.
+                let vault_address = object::id_to_address(&vault::get_vault_id(&vault));
+                let funds = balance::create_for_testing<USDC>(deposit_amount);
+                balance::send_funds(funds, vault_address);
+
+                test_scenario::next_tx(&mut scenario, operator);
+
+                vault::deposit_to_vault_without_minting_shares_v3(&mut vault, &config, deposit_amount, sub_account, test_scenario::ctx(&mut scenario));
+
+                assert!(vault::get_vault_balance<USDC, UltraUSDC>(&vault) == deposit_amount, 2);
+
+                test_scenario::return_shared(config);
+                test_scenario::return_shared(vault);
+                test_scenario::end(scenario);
+        }
+
+        /// v3 sources funds from the vault's accumulator (address) balance rather
+        /// than a coin object. The permission checks live in the shared internal
+        /// helper, so they are asserted here too: a non-operator must not be able
+        /// to drain the accumulator into the vault.
+        ///
+        /// The accumulator is funded first so the call fails on the permission
+        /// check for the right reason. On chain, asking for more than the
+        /// accumulator holds fails the whole transaction with
+        /// InsufficientFundsForWithdraw before any Move code runs, so a test
+        /// against an empty accumulator would assert behaviour the chain never
+        /// reaches.
+        #[test]
+        #[expected_failure(abort_code = ember_vaults::vault::EInvalidPermission)]
+        fun should_revert_when_non_vault_operator_tries_to_deposit_accumulator_balance() {
+
+                let operator = test_utils::alice(); // alice is rate_manager, not the vault operator
+                let sub_account = test_utils::charlie();
+                let deposit_amount = 10000;
+
+                let mut scenario = test_scenario::begin(operator);
+                test_utils::initialize(&mut scenario);
+                test_utils::set_sub_account(&mut scenario, sub_account);
+
+                test_scenario::next_tx(&mut scenario, operator);
+                let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+                let vault_address = object::id_to_address(&vault::get_vault_id(&vault));
+                let funds = balance::create_for_testing<USDC>(deposit_amount);
+                balance::send_funds(funds, vault_address);
+
+                test_scenario::next_tx(&mut scenario, operator);
+
+                vault::deposit_to_vault_without_minting_shares_v3(&mut vault, &config, deposit_amount, sub_account, test_scenario::ctx(&mut scenario));
+
+                test_scenario::return_shared(config);
+                test_scenario::return_shared(vault);
+                test_scenario::end(scenario);
+        }
+
+        /// A sub account that is not whitelisted must be rejected on the v3 path
+        /// as well. As above, the accumulator is funded so the call reaches the
+        /// sub-account check rather than failing the withdrawal first.
+        #[test]
+        #[expected_failure(abort_code = ember_vaults::vault::EInvalidAccount)]
+        fun should_fail_to_deposit_accumulator_balance_from_non_sub_account() {
+
+                let operator = test_utils::bob();
+                let non_sub_account = test_utils::alice(); // never whitelisted as a sub account
+                let deposit_amount = 10000;
+
+                let mut scenario = test_scenario::begin(operator);
+                test_utils::initialize(&mut scenario);
+
+                test_scenario::next_tx(&mut scenario, operator);
+                let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+                let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+                let vault_address = object::id_to_address(&vault::get_vault_id(&vault));
+                let funds = balance::create_for_testing<USDC>(deposit_amount);
+                balance::send_funds(funds, vault_address);
+
+                test_scenario::next_tx(&mut scenario, operator);
+
+                vault::deposit_to_vault_without_minting_shares_v3(&mut vault, &config, deposit_amount, non_sub_account, test_scenario::ctx(&mut scenario));
+
+                test_scenario::return_shared(config);
+                test_scenario::return_shared(vault);
+                test_scenario::end(scenario);
         }
 
          /// Test account with no pending shares returns 0
@@ -3557,6 +3839,346 @@ module ember_vaults::tests_vault {
 
         // Verify max_rate_change_per_update was updated
         assert!(vault::get_vault_max_rate_change_per_update<USDC, UltraUSDC>(&vault) == 500000000, 7);
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    // ==========================================================
+    // Per-operation pause + guardian fast-paths (regular Vault)
+    // ==========================================================
+
+    #[test]
+    fun should_pause_deposits_via_guardian_and_leave_others_unpaused() {
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+        test_scenario::next_tx(&mut scenario, guardian);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+        // Guardian pauses ONLY deposits via the per-op setter.
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"deposits", true,
+            test_scenario::ctx(&mut scenario),
+        );
+        assert!(vault::is_deposits_paused<USDC, UltraUSDC>(&vault), 1);
+        assert!(!vault::is_withdrawals_paused<USDC, UltraUSDC>(&vault), 2);
+        assert!(!vault::is_privileged_operations_paused<USDC, UltraUSDC>(&vault), 3);
+        // Legacy global bit stays false — the per-op setter must not touch it.
+        assert!(!vault::get_vault_paused<USDC, UltraUSDC>(&vault), 4);
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun should_toggle_per_op_flags_independently() {
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+        test_scenario::next_tx(&mut scenario, guardian);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"deposits", true, test_scenario::ctx(&mut scenario),
+        );
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"withdrawals", true, test_scenario::ctx(&mut scenario),
+        );
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"privileged_operations", true, test_scenario::ctx(&mut scenario),
+        );
+        assert!(vault::is_deposits_paused<USDC, UltraUSDC>(&vault), 1);
+        assert!(vault::is_withdrawals_paused<USDC, UltraUSDC>(&vault), 2);
+        assert!(vault::is_privileged_operations_paused<USDC, UltraUSDC>(&vault), 3);
+
+        // Unpause only deposits — the other two must remain paused.
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"deposits", false, test_scenario::ctx(&mut scenario),
+        );
+        assert!(!vault::is_deposits_paused<USDC, UltraUSDC>(&vault), 4);
+        assert!(vault::is_withdrawals_paused<USDC, UltraUSDC>(&vault), 5);
+        assert!(vault::is_privileged_operations_paused<USDC, UltraUSDC>(&vault), 6);
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ember_vaults::vault::EVaultPaused)]
+    fun privileged_pause_blocks_operator_privileged_operation() {
+        // Regression (L-2): pausing `privileged_operations` must actually gate a
+        // privileged op. Previously the flag was stored/emitted but never read,
+        // so this call would have silently succeeded.
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+        let operator = test_utils::bob();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        // Admin sets a guardian.
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+        test_scenario::return_shared(config);
+
+        // Guardian pauses privileged operations.
+        test_scenario::next_tx(&mut scenario, guardian);
+        let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"privileged_operations", true,
+            test_scenario::ctx(&mut scenario),
+        );
+        test_scenario::return_shared(vault);
+        test_scenario::return_shared(config);
+
+        // Operator's privileged op (collect_platform_fee) must now abort
+        // EVaultPaused — the gate runs before the fee>0 / permission checks.
+        test_scenario::next_tx(&mut scenario, operator);
+        let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        vault::collect_platform_fee_v2<USDC, UltraUSDC>(
+            &mut vault, &config, &clock, test_scenario::ctx(&mut scenario),
+        );
+
+        clock::destroy_for_testing(clock);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun legacy_paused_bit_gates_all_three_operations() {
+        // Backward-compat guarantee: an on-chain vault with the legacy global
+        // `vault.paused = true` bit set continues to block all three op categories
+        // through the granular readers (which OR the legacy bit and the per-op DF).
+        let protocol_admin = test_utils::protocol_admin();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+        vault::set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, true, test_scenario::ctx(&mut scenario),
+        );
+
+        assert!(vault::get_vault_paused<USDC, UltraUSDC>(&vault), 1);
+        assert!(vault::is_deposits_paused<USDC, UltraUSDC>(&vault), 2);
+        assert!(vault::is_withdrawals_paused<USDC, UltraUSDC>(&vault), 3);
+        assert!(vault::is_privileged_operations_paused<USDC, UltraUSDC>(&vault), 4);
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ember_vaults::vault::EInvalidPauseOperation)]
+    fun should_fail_guardian_pause_on_invalid_operation_string() {
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+        test_scenario::next_tx(&mut scenario, guardian);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"unknown_op", true,
+            test_scenario::ctx(&mut scenario),
+        );
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ember_vaults::vault::EInvalidStatus)]
+    fun should_fail_guardian_pause_on_same_value() {
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+        test_scenario::next_tx(&mut scenario, guardian);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+        // The default deposits-paused value is false; setting it to false again must revert.
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"deposits", false,
+            test_scenario::ctx(&mut scenario),
+        );
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun should_allow_guardian_to_pause_deposits_on_vault() {
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+        test_scenario::next_tx(&mut scenario, guardian);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"deposits", true,
+            test_scenario::ctx(&mut scenario),
+        );
+        assert!(vault::is_deposits_paused<USDC, UltraUSDC>(&vault), 1);
+        assert!(!vault::is_withdrawals_paused<USDC, UltraUSDC>(&vault), 2);
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ember_vaults::admin::EUnauthorized)]
+    fun should_fail_when_non_guardian_calls_guardian_vault_pause() {
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+        let random_user = test_utils::alice();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+        test_scenario::next_tx(&mut scenario, random_user);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+        vault::guardian_set_vault_paused_status<USDC, UltraUSDC>(
+            &mut vault, &config, b"deposits", true,
+            test_scenario::ctx(&mut scenario),
+        );
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun should_allow_guardian_to_blacklist_account() {
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+        let bad_actor = test_utils::alice();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+
+        test_scenario::next_tx(&mut scenario, guardian);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+
+        vault::guardian_set_blacklisted_account<USDC, UltraUSDC>(
+            &mut vault, &config, bad_actor, true,
+            test_scenario::ctx(&mut scenario),
+        );
+
+        let blacklisted = vault::get_vault_blacklisted_accounts<USDC, UltraUSDC>(&vault);
+        assert!(std::vector::contains(&blacklisted, &bad_actor), 1);
+
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(vault);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun guardian_blacklist_works_even_when_protocol_is_paused() {
+        // The whole point of the guardian is emergency response: it must be able
+        // to blacklist even when the protocol is paused (matches EVM's
+        // `guardianSetBlacklistedAccount`, which has no `verify_protocol_not_paused`
+        // check). The operator variant DOES require unpaused; the guardian variant
+        // deliberately does not.
+        let protocol_admin = test_utils::protocol_admin();
+        let guardian = test_utils::charlie();
+        let bad_actor = test_utils::alice();
+
+        let mut scenario = test_scenario::begin(protocol_admin);
+        test_utils::initialize(&mut scenario);
+
+        test_scenario::next_tx(&mut scenario, protocol_admin);
+        let mut config = test_scenario::take_shared<ProtocolConfig>(&scenario);
+        let cap = test_scenario::take_from_address<AdminCap>(&scenario, protocol_admin);
+        admin::set_guardian(&mut config, &cap, guardian);
+        // Pause the entire protocol.
+        admin::pause_non_admin_operations(&mut config, &cap, true);
+        test_scenario::return_to_address<AdminCap>(protocol_admin, cap);
+        assert!(admin::get_protocol_pause_status(&config), 1);
+
+        // Guardian blacklists despite the pause — must succeed.
+        test_scenario::next_tx(&mut scenario, guardian);
+        let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
+        vault::guardian_set_blacklisted_account<USDC, UltraUSDC>(
+            &mut vault, &config, bad_actor, true,
+            test_scenario::ctx(&mut scenario),
+        );
+        let blacklisted = vault::get_vault_blacklisted_accounts<USDC, UltraUSDC>(&vault);
+        assert!(std::vector::contains(&blacklisted, &bad_actor), 2);
 
         test_scenario::return_shared(config);
         test_scenario::return_shared(vault);

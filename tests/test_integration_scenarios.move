@@ -270,10 +270,12 @@ module ember_vaults::test_integration_scenarios {
         test_scenario::next_tx(&mut scenario, operator);
         let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
         let mut vault = test_scenario::take_shared<Vault<USDC,UltraUSDC>>(&scenario);
-        
-        vault::collect_platform_fee(&mut vault, &config, test_scenario::ctx(&mut scenario));
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+
+        vault::collect_platform_fee_v2(&mut vault, &config, &clock, test_scenario::ctx(&mut scenario));
         assert!(vault::get_accrued_platform_fee<USDC,UltraUSDC>(&vault) == 0, 2);
-        
+
+        clock::destroy_for_testing(clock);
         test_scenario::return_shared(config);
         test_scenario::return_shared(vault);
 

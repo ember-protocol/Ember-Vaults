@@ -86,8 +86,11 @@ module ember_vaults::test_charge_accrued_platform_fees {
             
             assert!(new_accrued == initial_accrued + expected_fee, 0);
             assert!(new_last_charged == new_timestamp, 1);
-            assert!(new_seq == initial_seq, 2);
-            
+            // Sequence bumps once because the helper emitted
+            // VaultPlatformFeeCharged (fee_amount > 0 after a full day).
+            // Mirrors EVM per-event bump in `_chargeAccruedPlatformFees`.
+            assert!(new_seq == initial_seq + 1, 2);
+
             clock::destroy_for_testing(clock);
             test_scenario::return_shared(config);
             test_scenario::return_shared(vault);
@@ -172,7 +175,7 @@ module ember_vaults::test_charge_accrued_platform_fees {
             let mut total_expected_fee = 0;
             
             // Charge fee 5 times, each after 10 minutes
-            let mut i = 0;
+            let mut i = 0u64;
             while (i < 5) {
                 current_time = current_time + TEN_MINUTES_MS;
                 clock::set_for_testing(&mut clock, current_time);
@@ -404,10 +407,15 @@ module ember_vaults::test_charge_accrued_platform_fees {
     }
 
     #[test]
-    fun test_charge_fee_sequence_number_unchanged() {
+    /// Mirrors EVM per-event bump: `charge_accrued_platform_fees` bumps the
+    /// sequence iff it actually emits VaultPlatformFeeCharged (fee_amount > 0).
+    /// Round trips over three short windows may float either way depending on
+    /// u64 flooring of the computed fee, so the assertion is on the pairing:
+    /// accrued grew ⇒ event was emitted ⇒ sequence bumped by exactly one.
+    fun test_charge_fee_sequence_bumps_only_when_emit() {
         let protocol_admin = test_utils::protocol_admin();
         let user = test_utils::alice();
-        
+
         let mut scenario = test_scenario::begin(protocol_admin);
         test_utils::initialize(&mut scenario);
 
@@ -424,28 +432,34 @@ module ember_vaults::test_charge_accrued_platform_fees {
             let config = test_scenario::take_shared<ProtocolConfig>(&scenario);
             let mut vault = test_scenario::take_shared<Vault<USDC, UltraUSDC>>(&scenario);
             let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
-            
+
             let mut current_time = INITIAL_TIMESTAMP;
             clock::set_for_testing(&mut clock, current_time);
-            
-            let initial_seq = vault::get_vault_sequence_number(&vault);
-            
-            // Charge fee 3 times (using short intervals)
-            current_time = current_time + TEN_MINUTES_MS;
-            clock::set_for_testing(&mut clock, current_time);
-            vault::test_charge_accrued_platform_fees(&mut vault, &clock);
-            assert!(vault::get_vault_sequence_number(&vault) == initial_seq, 0);
-            
-            current_time = current_time + TEN_MINUTES_MS;
-            clock::set_for_testing(&mut clock, current_time);
-            vault::test_charge_accrued_platform_fees(&mut vault, &clock);
-            assert!(vault::get_vault_sequence_number(&vault) == initial_seq, 1);
-            
-            current_time = current_time + TEN_MINUTES_MS;
-            clock::set_for_testing(&mut clock, current_time);
-            vault::test_charge_accrued_platform_fees(&mut vault, &clock);
-            assert!(vault::get_vault_sequence_number(&vault) == initial_seq, 2);
-            
+
+            // Charge three times over ten-minute windows; each call is
+            // asserted independently: seq bumps iff accrued grew.
+            let mut i = 0;
+            while (i < 3) {
+                let seq_before = vault::get_vault_sequence_number(&vault);
+                let accrued_before = vault::get_accrued_platform_fee(&vault);
+
+                current_time = current_time + TEN_MINUTES_MS;
+                clock::set_for_testing(&mut clock, current_time);
+                vault::test_charge_accrued_platform_fees(&mut vault, &clock);
+
+                let seq_after = vault::get_vault_sequence_number(&vault);
+                let accrued_after = vault::get_accrued_platform_fee(&vault);
+
+                if (accrued_after > accrued_before) {
+                    // Fee emitted — sequence must have bumped by exactly 1.
+                    assert!(seq_after == seq_before + 1, i);
+                } else {
+                    // No fee (u64 floor) — no emit, so no bump.
+                    assert!(seq_after == seq_before, i + 10);
+                };
+                i = i + 1;
+            };
+
             clock::destroy_for_testing(clock);
             test_scenario::return_shared(config);
             test_scenario::return_shared(vault);

@@ -1,0 +1,250 @@
+{
+  "UltraCoins": [
+    {
+      "Currency": "0xe5401963924c21a3b2fafda7869dc0acd91571443b5c08215550e24d26c6e8a2::esuig::ESUIG",
+      "Decimals": 9,
+      "Package": "0xe5401963924c21a3b2fafda7869dc0acd91571443b5c08215550e24d26c6e8a2",
+      "Symbol": "eSUIG",
+      "TreasuryCap": "0xd0863893683a1d15a0fbb8476260750054850132ea88edac2ec0b97bb10d620f",
+      "UpgradeCap": "0x63112a6a572da4dbda16f6300f0d264f4c8e0e5bde6d41e03f66569776432241"
+    },
+    {
+      "Currency": "0x244b98d29bd0bba401c7cfdd89f017c51759dad615e15a872ddfe45af079bb1d::ebtc::EBTC",
+      "Decimals": 8,
+      "Package": "0x244b98d29bd0bba401c7cfdd89f017c51759dad615e15a872ddfe45af079bb1d",
+      "Symbol": "eBTC",
+      "TreasuryCap": "0x565fb379ba47c8002f23b859f5af84a8d2aea9cb011894ad6a3427225a11fc60",
+      "UpgradeCap": "0xe493fb23dc26a462e2e29f21f825800af9039e909d500685a0f7a0672f9ef48b"
+    },
+    {
+      "Currency": "0x65b3db01dd36de8706128d842ca3d738ed30bd72c155ea175a44aedca37d4caf::ebasis::EBASIS",
+      "Decimals": 6,
+      "Package": "0x65b3db01dd36de8706128d842ca3d738ed30bd72c155ea175a44aedca37d4caf",
+      "Symbol": "eBASIS",
+      "TreasuryCap": "0x5014968aee3b6c453fe5919519957b214c81605eb1ff41fe66436a5b1af0bc84",
+      "UpgradeCap": "0xe199ca0c37ae3916e1e40b6fcd24b0e92c0f33d6025e8166a0d17b8cc49b1937"
+    },
+    {
+      "Currency": "0x4dc301602277552a6c2c3309b02a70f7aae27eeeb300863de9466b4c1be7d568::egsui::EGSUI",
+      "Decimals": 9,
+      "Package": "0x4dc301602277552a6c2c3309b02a70f7aae27eeeb300863de9466b4c1be7d568",
+      "Symbol": "egSUI",
+      "TreasuryCap": "0xc28c53f2089ed690abe464eb9e0815c0d523af22d2637f5622c469ab72da55c0",
+      "UpgradeCap": "0x35df350768ae2fd2ed95061176e09fe9a80389be9eb9931635fbb1dc12b3bf70"
+    },
+    {
+      "Currency": "0x68532559a19101b58757012207d82328e75fde7a696d20a59e8307c1a7f42ad7::egusdc::EGUSDC",
+      "Decimals": 6,
+      "Package": "0x68532559a19101b58757012207d82328e75fde7a696d20a59e8307c1a7f42ad7",
+      "Symbol": "egUSDC",
+      "TreasuryCap": "0xa0403914167deb04e797168ee5fb8dec34cb68bc7e76f463f8818f0c25aeb966",
+      "UpgradeCap": "0xac8474727187dfda3333e56b0293277e88286ef278c39c4d8e5c8100881d5b45"
+    },
+    {
+      "Currency": "0x66629328922d609cf15af779719e248ae0e63fe0b9d9739623f763b33a9c97da::esui::ESUI",
+      "Decimals": 9,
+      "Package": "0x66629328922d609cf15af779719e248ae0e63fe0b9d9739623f763b33a9c97da",
+      "Symbol": "eSUI",
+      "TreasuryCap": "0x55aa22ab6792bad79d35dcacb213a65d4b15e0202db395a973d58d85224e7d1e",
+      "UpgradeCap": "0xc63a5dcd595ea1f9c4c623f7027ff0c1142a11c8fcfd763dc12dd60544e2f66d"
+    },
+    {
+      "Currency": "0xd84b887935d73110c8cb4b981f4925f83b7a20c41ac572840513422c5da283d6::eblue::EBLUE",
+      "Decimals": 9,
+      "Package": "0xd84b887935d73110c8cb4b981f4925f83b7a20c41ac572840513422c5da283d6",
+      "Symbol": "eBLUE",
+      "TreasuryCap": "0x1cca9261f9c8c1520b418bbc69fd0b932943c5d169bcc23fb4c88ab943445cb1",
+      "UpgradeCap": "0x7306c14571d7f86764febd6eb2d7f870f5ac7d790ac051336c7cf926dfcffbca"
+    },
+    {
+      "Currency": "0x90cb9a8b94284a541e0501df915ebf5a248df832d1098a8b5ce4f5d9a03c77f0::blp::BLP",
+      "Decimals": 6,
+      "Package": "0x90cb9a8b94284a541e0501df915ebf5a248df832d1098a8b5ce4f5d9a03c77f0",
+      "Symbol": "BLP",
+      "TreasuryCap": "0x95d89830b2b8b58c17cf64933a8124e3bc214894822cbd0af90a77064f752d72",
+      "UpgradeCap": "0x0ca90c8978182bbf09ed0ebff4ddff35a0e18393e58f64560bf13aebf8d08999"
+    },
+    {
+      "Currency": "0x89b0d4407f17cc1b1294464f28e176e29816a40612f7a553313ea0a797a5f803::ethird::ETHIRD",
+      "Decimals": 6,
+      "Package": "0x89b0d4407f17cc1b1294464f28e176e29816a40612f7a553313ea0a797a5f803",
+      "Symbol": "eTHIRD",
+      "TreasuryCap": "0x7dda1cb4fc64e780fa7073dfb1d7adc5560346415c4f50c80d403cbf926e00f5",
+      "UpgradeCap": "0x195dd8cc4655737f70b8fd30f44ed8d9c65cd8f5023360e175fbf1d92d2eda16"
+    },
+    {
+      "Currency": "0xb8d11a432391868eedf0fee3e074baa1eac97c01d5670ee79164d64c6ade3bfd::emft::EMFT",
+      "Decimals": 6,
+      "Package": "0xb8d11a432391868eedf0fee3e074baa1eac97c01d5670ee79164d64c6ade3bfd",
+      "Symbol": "eMFT",
+      "TreasuryCap": "0x90140cd2fab0f343b25fb3b43b3e4dae5880c4295f6c22b68fb387e11e0632d7",
+      "UpgradeCap": "0x397346803d5a1460a43b7f9045c46f2757bfe45677aa692daae6ad37f14ef826"
+    },
+    {
+      "Currency": "0x09e1ddb610500c5326d91923aba379649982f671583d741dfc3f6b0263dbbcb9::eriver::ERIVER",
+      "Decimals": 6,
+      "Package": "0x09e1ddb610500c5326d91923aba379649982f671583d741dfc3f6b0263dbbcb9",
+      "Symbol": "eRIVER",
+      "TreasuryCap": "0xdf729c4710a3b3f0c05d21bb92cf0c492589fdea4b31ec350df296a36d5da6e5",
+      "UpgradeCap": "0xbe8c7b79a9ba1d46745d4e40e56e37f88dd1f2ea140d29c2751183298ac3f3bf"
+    },
+    {
+      "Currency": "0xe298839aa964a746761c1d9acd14d6d16b18940244f5c6c8af8715aaa47f628f::ecushion::ECUSHION",
+      "Decimals": 9,
+      "Package": "0xe298839aa964a746761c1d9acd14d6d16b18940244f5c6c8af8715aaa47f628f",
+      "Symbol": "eCUSHION",
+      "TreasuryCap": "0xa379dd97fd276666666d0325734329e4cbcd35a25dc9ec207da58e747f075f2b",
+      "UpgradeCap": "0x9ae12ac42ddebcdeb26cdd27853e0a5a0e9bf42b48247cb9c7e08ccddd7a32c2"
+    },
+    {
+      "Currency": "0xce782b5d02ca5235982e14d5f9d462d8317e3222a530c9b19074fa1c5d6999be::ekalshi::EKALSHI",
+      "Decimals": 6,
+      "Package": "0xce782b5d02ca5235982e14d5f9d462d8317e3222a530c9b19074fa1c5d6999be",
+      "Symbol": "eKALSHI",
+      "TreasuryCap": "0x3a33a66074fa8b0fe39ef7fe28822b9cf68711f80dcf00b090ee6ac3344e8ca8",
+      "UpgradeCap": "0x30a6e5ba4b95ef0f40e54405a44d584d9f0db19ac450daeb1a10b6a9cda53de2"
+    },
+    {
+      "Currency": "0x8a398f65f8635be31c181632bf730aea25074505d70c77d9b287e7d4f063ef70::ewal::EWAL",
+      "Decimals": 9,
+      "Package": "0x8a398f65f8635be31c181632bf730aea25074505d70c77d9b287e7d4f063ef70",
+      "Symbol": "eWAL",
+      "TreasuryCap": "0x4c3e6312e2df3210b01724478224970e43084d33adf7b23b98340a5380240589",
+      "UpgradeCap": "0xffce02daead9c52eb15753361c2d81edd6631331688cd543f60d23a3c4aae4c0"
+    },
+    {
+      "Currency": "0x56589f5381303a763a62e79ac118e5242f83652f4c5a9448af75162d8cb7140c::exbtc::EXBTC",
+      "Decimals": 8,
+      "Package": "0x56589f5381303a763a62e79ac118e5242f83652f4c5a9448af75162d8cb7140c",
+      "Symbol": "exBTC",
+      "TreasuryCap": "0x99e494a87f1006a89d43466b101661df4541bb93ee99e2f4f91362abd6cdef95",
+      "UpgradeCap": "0x2c1c84784cd872239f3cd68ce90dc36831d55c5491e451fdf7bf058fc6e8ec3b"
+    },
+    {
+      "Currency": "0x2670e7102f3903f72be14f27676283f62a181742483a661caba7f9a1821a2c22::ebtcvc::EBTCVC",
+      "Decimals": 8,
+      "Package": "0x2670e7102f3903f72be14f27676283f62a181742483a661caba7f9a1821a2c22",
+      "Symbol": "eBTCvc",
+      "TreasuryCap": "0x231d4ce579486707364429670e81ecd5fdc006c15207ec618fe4b4d72f2e4492",
+      "UpgradeCap": "0x3bca880ac11a04ea7acd30820ca97bd128b79b2888f9d3aa7c7db385b54a16c5"
+    },
+    {
+      "Currency": "0x267a6e56d07057ba827c38904eb30614d3f01fd052129a709e74d0bb4ed9be3c::ercusd::ERCUSD",
+      "Decimals": 6,
+      "Package": "0x267a6e56d07057ba827c38904eb30614d3f01fd052129a709e74d0bb4ed9be3c",
+      "Symbol": "ercUSD",
+      "TreasuryCap": "0x24ff42bdfdc54967ca5d28f71d750ba14cc5325fe90bf8743fabe68b668bb405",
+      "UpgradeCap": "0xbd0bf7d4483b79c7f5dd1db358570d39c9ceac9464e0033dbea1bb3a29d23342"
+    },
+    {
+      "Currency": "0x6e6b58a710a5d59cfc44ba3af8004dd832af980a62c4519818ff463caf35a493::epoly::EPOLY",
+      "Decimals": 6,
+      "Package": "0x6e6b58a710a5d59cfc44ba3af8004dd832af980a62c4519818ff463caf35a493",
+      "Symbol": "ePOLY",
+      "TreasuryCap": "0x80b2375276be5a92b6bc3f57ba0767b89b283bb1bfde0cfdf8d64c97527f3889",
+      "UpgradeCap": "0xc2e66d5d7d39f8b09a063c24f53b527987cab931f0dfb71f2f7efe84e5f9c842"
+    },
+    {
+      "Currency": "0xa25062ed368a6e4e446f3badcdfd1deb92537ba9f12faa6bfcce4c4d0330d4f5::eacred::EACRED",
+      "Decimals": 6,
+      "Package": "0xa25062ed368a6e4e446f3badcdfd1deb92537ba9f12faa6bfcce4c4d0330d4f5",
+      "Symbol": "eACRED",
+      "TreasuryCap": "0x87d5e11826c4a2b4c02049fab1648a3285a08af0fc6d7b2ce369b0b39ae3712b",
+      "UpgradeCap": "0x60d4cebeac1fbf660ecdab352c14b34e7670a093aaa0f7664d583153045fcb70"
+    },
+    {
+      "Currency": "0xab7ef01122a9e54e2c46a1fc280a3e008b06c7e3f9accc0f4c141b71f3183a61::vbtcvc::VBTCVC",
+      "Decimals": 8,
+      "Package": "0xab7ef01122a9e54e2c46a1fc280a3e008b06c7e3f9accc0f4c141b71f3183a61",
+      "Symbol": "vBTCvc",
+      "TreasuryCap": "0x291a30efa7a4535ae2136ad25f333d83fec09b2744238774b2797179d3d93bf9",
+      "UpgradeCap": "0x0fc4b7e6597a58dca9dd60655ad4cba5b2407de95b968f3f642c5679a247984b"
+    },
+    {
+      "Currency": "0x12ac321ecded49493574792862c01fc7bb4b08fd81d55fb9148ae14af3677cf5::trcusd::TRCUSD",
+      "Decimals": 6,
+      "Package": "0x12ac321ecded49493574792862c01fc7bb4b08fd81d55fb9148ae14af3677cf5",
+      "Symbol": "trcUSD",
+      "TreasuryCap": "0x26549d8b27c79a2b7ff50b2aedbadf758b5d091e77033e839a574f69316d26f5",
+      "UpgradeCap": "0xbd67d60e25347ff1053050c6468d2d381c0ec279cdb6b2b6a057cb122d2c1acc"
+    },
+    {
+      "Currency": "0x001f2e09f885ad96d8b00cf87f4a12ba08643c599f873b5a66173a1682489877::eudl::EUDL",
+      "Decimals": 6,
+      "Package": "0x001f2e09f885ad96d8b00cf87f4a12ba08643c599f873b5a66173a1682489877",
+      "Symbol": "eUDL",
+      "TreasuryCap": "0x401d5a9dbc717b0c4c82036250696d1f7560a0d21542095a4259a133fc8b46ea",
+      "UpgradeCap": "0x74fb20641aa5371378015750edcd5de44a42c96f6bfebb33cf170e8bb41f33f4"
+    },
+    {
+      "Currency": "0x820dd6ead8b56abb89a76cfc8e676703876a906a2e4dddde6c18c8052e5fd194::mrcusd::MRCUSD",
+      "Decimals": 6,
+      "Package": "0x820dd6ead8b56abb89a76cfc8e676703876a906a2e4dddde6c18c8052e5fd194",
+      "Symbol": "mrcUSD",
+      "TreasuryCap": "0xe8a91cdc0dd31ccbdf9d7a631d680a7e81a5615a31941f65df9d0c4d7e7101ef",
+      "UpgradeCap": "0xeccaed10fd4b5d6b6f55030d36cb7ae2b616f23accd438798c078820dec3c0a1"
+    },
+    {
+      "Currency": "0x83e7278694c86ff449a4eb3f87a65fc1197d38ade602a3a68e8c47b26bfd367e::eyn::EYN",
+      "Decimals": 6,
+      "Package": "0x83e7278694c86ff449a4eb3f87a65fc1197d38ade602a3a68e8c47b26bfd367e",
+      "Symbol": "eYN",
+      "TreasuryCap": "0x127dba3b2b8f3cca80160cae6de00fb5b757cdd09319de9c0cb3bef489d0faee",
+      "UpgradeCap": "0x2ec23f82317c307730921dc9eb1f5f0728004cf77454d2b164f04eeb320591fb"
+    },
+    {
+      "Currency": "0x2fe1868be54545bbb40de0d1b47710168cb296aa18dd8beb11d750fc08b88c2b::metausd::METAUSD",
+      "Decimals": 6,
+      "Package": "0x2fe1868be54545bbb40de0d1b47710168cb296aa18dd8beb11d750fc08b88c2b",
+      "Symbol": "metaUSD",
+      "TreasuryCap": "0xaa645575e88f02ad2d1f97349c6202c1acb9f75d2e4734987b9e8d45bc1ba55b",
+      "UpgradeCap": "0x0693516b8425567103b9a471a882cdeaa831f5b1a371d64313d34c49e4598f04"
+    },
+    {
+      "Currency": "0xc360f622a9e77bb774061c44c11915e3cfc4242488cd668652dbff39cf0cdd58::esuiusde::ESUIUSDE",
+      "Decimals": 6,
+      "Package": "0xc360f622a9e77bb774061c44c11915e3cfc4242488cd668652dbff39cf0cdd58",
+      "Symbol": "esuiUSDe",
+      "TreasuryCap": "0x71a857ca3b97c99074778f897571fb9248e02728f978222ce4db26fd462eb7fc",
+      "UpgradeCap": "0x7b8eee8295d0df38a644a242bffbdb678f15f8db98dfc095d84c92e604dd1401"
+    },
+    {
+      "Currency": "0x34469c8accdd673df02600265cbbad3688577f0e716866e257f88d448d463492::eearn::EEARN",
+      "Decimals": 6,
+      "Package": "0x34469c8accdd673df02600265cbbad3688577f0e716866e257f88d448d463492",
+      "Symbol": "eEARN",
+      "TreasuryCap": "0x0217f609f9e15c1160ef0ee1a432e9374c40a09d38fddba731ca713c7180f684",
+      "UpgradeCap": "0xdee181a640ab1c68ed8615ded6331de3c9d0f05cc01d87de6c6835e9031f1655"
+    },
+    {
+      "Currency": "0x88eb44ba72b24f31bcd022e6a0f85e149f533ee5319cb4891f2eab0ef37baa34::eacred::EACRED",
+      "Decimals": 6,
+      "Package": "0x88eb44ba72b24f31bcd022e6a0f85e149f533ee5319cb4891f2eab0ef37baa34",
+      "Symbol": "eACRED",
+      "TreasuryCap": "0x975e5cce0f65e049ed126af697b65bd26488ef7fe9a536d7e7cbf6ae3cbaf774",
+      "UpgradeCap": "0x9033c2a0c7890cd364415dcd3f86c31e230e1d60f213ca3edc8cbfa3991f53dc"
+    },
+    {
+      "Currency": "0xe9250de7933e72061a8020fa52c77dea2914685e3f91e6b055b7c1204aa8366f::hlend::HLEND",
+      "Decimals": 6,
+      "Package": "0xe9250de7933e72061a8020fa52c77dea2914685e3f91e6b055b7c1204aa8366f",
+      "Symbol": "hLEND",
+      "TreasuryCap": "0x181baca4b982cd82c5e6a2bb2ecc1a9778aae0120a6f01b8d879ab2802e74dc2",
+      "UpgradeCap": "0x87941f884d8f21e45581ca42ee2de72029a24182094e76bc99ae76b32157b483"
+    },
+    {
+      "Currency": "0x4f411619700668db9cae5b4a1892263f1c35082bb0b2892c90ce1aae6bbcb5eb::erwa10::ERWA10",
+      "Decimals": 6,
+      "Package": "0x4f411619700668db9cae5b4a1892263f1c35082bb0b2892c90ce1aae6bbcb5eb",
+      "Symbol": "eRWA10",
+      "TreasuryCap": "0xd7f77b59e1037aa1581394e36608998953f326637bd1eeb36844b2eaef1a6ec9",
+      "UpgradeCap": "0x662e79c83b526949982fd0206fc9d2fa84a5e5fba4ac81b5f9ccbbe4ed20550f"
+    }
+  ],
+  "VaultProtocol": {
+    "AdminCap": "0xa593ac200faca510270802a377191c8304a7ad5f8fac742e7bb04ec58b1e3947",
+    "Package": "0x4269cb19a1a7938c8263d21c08d98b9324e5985522072ae3d76928650aed809f",
+    "ProtocolConfig": "0x3a515233ab817af082ef31454cee5eb8122b8b7cd586bf6b26ae9b879ee1e565",
+    "UpgradeCap": "0x298c2d3e0449655cb48b3d5599ea124bf47690e8eab175a7458c3d2ce3bdcefb"
+  }
+}
