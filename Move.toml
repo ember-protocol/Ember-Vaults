@@ -1,7 +1,7 @@
 [package]
 name = "ember_vaults"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
-published-at = "0x4e1634d0001f22e24ca9fe2127aa49461ea3c320d4456c005b2ad86038b3f863"
+published-at = "0xb82df65c5bae83c2f4c5eb4ec2fc57cc124b228cd9aef7a60ddb7d89c4e2b88e"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
